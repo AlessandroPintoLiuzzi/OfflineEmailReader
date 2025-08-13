@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<ResourceDictionary.MergedDictionaries>
+		<!-- Choose one color scheme to merge by default; light for now -->
+		<ResourceDictionary Source="/Themes/Colors.Light.xaml" />
+	</ResourceDictionary.MergedDictionaries>
+
+	<!-- Base styles using the theme brushes -->
+	<Style TargetType="Window">
+		<Setter Property="Background" Value="{DynamicResource App.Background}" />
+		<Setter Property="Foreground" Value="{DynamicResource App.Foreground}" />
+	</Style>
+	<Style TargetType="Button">
+		<Setter Property="Margin" Value="4" />
+		<Setter Property="Padding" Value="8,4" />
+	</Style>
+	<Style TargetType="TextBox">
+		<Setter Property="Margin" Value="4" />
+	</Style>
+</ResourceDictionary>

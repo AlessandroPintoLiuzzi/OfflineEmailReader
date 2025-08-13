@@ -1,0 +1,93 @@
+﻿<Window x:Class="OfflineEmailManager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Offline Email Viewer" Height="600" Width="900">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left Pane -->
+        <DockPanel Grid.Row="0" Grid.Column="0">
+            <Button DockPanel.Dock="Top" Content="Load .eml Files" Margin="0,0,0,8" Padding="12,4" Click="LoadFiles_Click"/>
+
+            <!-- Search Panel -->
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Search" Margin="8,0,0,0" Padding="12,4" Click="SearchButton_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Clear" Padding="12,4" Click="SearchClearButton_Click"/>
+                    <TextBox x:Name="SearchTextBox" MinWidth="200" ToolTip="Enter text to search" KeyDown="SearchTextBox_KeyDown"/>
+                </DockPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                    <RadioButton x:Name="SearchSubjectRadio" Content="Subject" IsChecked="True" Margin="0,0,12,0"/>
+                    <RadioButton x:Name="SearchContentRadio" Content="Subject + Body"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Email List -->
+            <ListView x:Name="EmailListBox"
+                      SelectionChanged="EmailListBox_SelectionChanged"
+                      Margin="0,0,0,0"
+                      VirtualizingStackPanel.IsVirtualizing="True"
+                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                      ScrollViewer.CanContentScroll="True">
+                <ListView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Copy Subject" Click="CopySubject_Click"/>
+                        <MenuItem Header="Copy From" Click="CopyFrom_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Delete" Click="DeleteEmail_Click"/>
+                    </ContextMenu>
+                </ListView.ContextMenu>
+                <ListView.View>
+                    <GridView AllowsColumnReorder="True">
+                        <GridViewColumn Width="190">
+                            <GridViewColumn.Header>
+                                <GridViewColumnHeader Content="Subject" Tag="Subject" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Subject}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding Subject}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+            <GridViewColumn Width="140" DisplayMemberBinding="{Binding From}">
+                            <GridViewColumn.Header>
+                <GridViewColumnHeader Content="From" Tag="From" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+            <GridViewColumn Width="130" DisplayMemberBinding="{Binding Date, StringFormat={}{0:yyyy-MM-dd HH:mm}}">
+                            <GridViewColumn.Header>
+                <GridViewColumnHeader Content="Date" Tag="Date" Click="GridViewColumnHeader_Click"/>
+                            </GridViewColumn.Header>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </DockPanel>
+
+        <!-- Splitter -->
+        <GridSplitter Grid.Row="0" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#DDD"/>
+
+        <!-- Right Pane -->
+        <Border Grid.Row="0" Grid.Column="2" BorderBrush="Gray" BorderThickness="1" Margin="5,0,0,0">
+            <wv2:WebView2 x:Name="EmailContentViewer" />
+        </Border>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="1" Grid.ColumnSpan="3" Margin="0,8,0,0">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusTextBlock" Text="Ready"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

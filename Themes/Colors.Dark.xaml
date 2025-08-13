@@ -1,0 +1,7 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<!-- Dark theme color resources (add more as needed) -->
+	<SolidColorBrush x:Key="App.Background" Color="#1E1E1E" />
+	<SolidColorBrush x:Key="App.Foreground" Color="#FFFFFF" />
+	<SolidColorBrush x:Key="App.Accent" Color="#3A96DD" />
+</ResourceDictionary>
