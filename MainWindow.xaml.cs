@@ -25,24 +25,45 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _context.Database.EnsureCreated();
-        LoadEmailsFromDb();
+        // Defer initial async load until the window is fully loaded to avoid running async void from constructor
+        Loaded += async (_, __) => await LoadEmailsInternalAsync(null);
     }
 
-    private void LoadEmailsFromDb()
+    private async void LoadEmailsFromDb()
     {
-        // Implementation from the previous step...
-        var all = _context.Emails.ToList();
-        EmailListBox.ItemsSource = all;
-        UpdateStatus(all.Count, "All (no filter)");
-        // Reapply last sort, if any
-        if (!string.IsNullOrEmpty(_lastSortProperty))
+        await LoadEmailsInternalAsync(null);
+    }
+
+    private async Task LoadEmailsInternalAsync(string? filter)
+    {
+        ShowLoading(true);
+        try
         {
-            ApplySort(_lastSortProperty!, _lastDirection, updateHeader: true);
+            // Simulate async database query to avoid UI freeze
+            var emails = await Task.Run(() =>
+            {
+                return _context.Emails.ToList();
+            });
+            EmailListBox.ItemsSource = emails;
+            UpdateStatus(emails.Count, filter ?? "All (no filter)");
+            if (!string.IsNullOrEmpty(_lastSortProperty))
+            {
+                ApplySort(_lastSortProperty!, _lastDirection, updateHeader: true);
+            }
+        }
+        finally
+        {
+            ShowLoading(false);
         }
     }
 
+    private void ShowLoading(bool isLoading)
+    {
+        if (LoadingOverlay != null)
+            LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
+    }
 
-    private void LoadFiles_Click(object sender, RoutedEventArgs e)
+    private async void LoadFiles_Click(object sender, RoutedEventArgs e)
     {
         var openFileDialog = new Win32OpenFileDialog
         {
@@ -51,6 +72,10 @@ public partial class MainWindow : Window
         };
 
         if (openFileDialog.ShowDialog() != true) return;
+
+        ShowLoading(true);
+        // Allow overlay to render before heavy work & modal prompts
+        await Task.Yield();
 
         int loadedCount = 0;
         int overwrittenCount = 0;
@@ -106,7 +131,9 @@ public partial class MainWindow : Window
         if (failedCount > 0) summary += $", Failed: {failedCount}";
         System.Windows.MessageBox.Show(summary);
 
-        LoadEmailsFromDb();
+        await LoadEmailsInternalAsync(null);
+
+        ShowLoading(false);
 
         // Local helpers keep scope tight and avoid class bloat
         static Email CreateFrom(MimeMessage m)
@@ -219,45 +246,49 @@ public partial class MainWindow : Window
         }
     }
 
-    private void SearchButton_Click(object sender, RoutedEventArgs e)
+    private async void SearchButton_Click(object sender, RoutedEventArgs e)
     {
         var query = SearchTextBox.Text?.Trim();
         if (string.IsNullOrWhiteSpace(query))
         {
             // Reset to all emails if query is empty
-            LoadEmailsFromDb();
+            await LoadEmailsInternalAsync(null);
             return;
         }
-
-        var emails = _context.Emails.AsQueryable();
-        // Use EF.Functions.Like for database-side contains (case-insensitive depends on collation; SQLite default is case-insensitive for ASCII)
-        string pattern = $"%{query}%";
-
-        if (SearchSubjectRadio.IsChecked == true)
+        ShowLoading(true);
+        try
         {
-            var result = emails
-                .Where(e => EF.Functions.Like(e.Subject ?? string.Empty, pattern))
-                .ToList();
+            bool subjectOnly = SearchSubjectRadio.IsChecked == true; // capture on UI thread
+            var result = await Task.Run(() =>
+            {
+                var emails = _context.Emails.AsQueryable();
+                string pattern = $"%{query}%";
+                if (subjectOnly)
+                {
+                    return emails
+                        .Where(e => EF.Functions.Like(e.Subject ?? string.Empty, pattern))
+                        .ToList();
+                }
+                else
+                {
+                    return emails
+                        .Where(e => EF.Functions.Like(e.Subject ?? string.Empty, pattern)
+                                 || EF.Functions.Like(e.BodyText ?? string.Empty, pattern)
+                                 || EF.Functions.Like(e.BodyHtml ?? string.Empty, pattern))
+                        .ToList();
+                }
+            });
+
             EmailListBox.ItemsSource = result;
-            UpdateStatus(result.Count, $"Subject contains '{query}'");
+            UpdateStatus(result.Count, subjectOnly ? $"Subject contains '{query}'" : $"Subject+Body contains '{query}'");
             if (!string.IsNullOrEmpty(_lastSortProperty))
             {
                 ApplySort(_lastSortProperty!, _lastDirection, updateHeader: true);
             }
         }
-        else // Subject + Body
+        finally
         {
-            var result = emails
-                .Where(e => EF.Functions.Like(e.Subject ?? string.Empty, pattern)
-                         || EF.Functions.Like(e.BodyText ?? string.Empty, pattern)
-                         || EF.Functions.Like(e.BodyHtml ?? string.Empty, pattern))
-                .ToList();
-            EmailListBox.ItemsSource = result;
-            UpdateStatus(result.Count, $"Subject+Body contains '{query}'");
-            if (!string.IsNullOrEmpty(_lastSortProperty))
-            {
-                ApplySort(_lastSortProperty!, _lastDirection, updateHeader: true);
-            }
+            ShowLoading(false);
         }
     }
 

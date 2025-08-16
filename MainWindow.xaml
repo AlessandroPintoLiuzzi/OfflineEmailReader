@@ -120,5 +120,18 @@
                 <TextBlock x:Name="StatusTextBlock" Text="Ready"/>
             </StatusBarItem>
         </StatusBar>
+
+        <!-- Loading Overlay -->
+        <Grid x:Name="LoadingOverlay"
+              Background="#80000000"
+              Visibility="Collapsed"
+              Panel.ZIndex="500">
+            <Border CornerRadius="6" Padding="20" Background="#FF2D2D30"  HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <ProgressBar IsIndeterminate="True" Width="160" Height="14"/>
+                    <TextBlock Text="Loading..." Foreground="White" Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
