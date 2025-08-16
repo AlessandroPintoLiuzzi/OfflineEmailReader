@@ -15,4 +15,13 @@ public class EmailDbContext : DbContext
     {
         optionsBuilder.UseSqlite("Data Source=local_emails.db");
     }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Attachment>()
+            .HasOne(a => a.Email)
+            .WithMany(e => e.Attachments)
+            .HasForeignKey(a => a.EmailId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
 }

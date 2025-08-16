@@ -8,6 +8,7 @@ using OfflineEmailManager.Data;
 using OfflineEmailManager.Model;
 using System.ComponentModel;
 using System.Windows.Data;
+using System.IO;
 
 namespace OfflineEmailManager;
 
@@ -106,15 +107,48 @@ public partial class MainWindow : Window
         LoadEmailsFromDb();
 
         // Local helpers keep scope tight and avoid class bloat
-        static Email CreateFrom(MimeMessage m) => new Email
+        static Email CreateFrom(MimeMessage m)
         {
-            Subject = (m.Subject ?? "(no subject)").Trim(),
-            From = string.Join(",", m.From.Select(a =>
-                (a as MailboxAddress)?.Name ?? (a as MailboxAddress)?.Address ?? a.ToString())),
-            Date = m.Date.DateTime,
-            BodyHtml = m.HtmlBody,
-            BodyText = m.TextBody
-        };
+            var email = new Email
+            {
+                Subject = (m.Subject ?? "(no subject)").Trim(),
+                From = string.Join(",", m.From.Select(a =>
+                    (a as MailboxAddress)?.Name ?? (a as MailboxAddress)?.Address ?? a.ToString())),
+                Date = m.Date.DateTime,
+                BodyHtml = m.HtmlBody,
+                BodyText = m.TextBody,
+                Attachments = new List<Attachment>()
+            };
+
+            foreach (var part in m.Attachments)
+            {
+                if (part is MimePart mp)
+                {
+                    using var ms = new MemoryStream();
+                    mp.Content.DecodeTo(ms);
+                    email.Attachments.Add(new Attachment
+                    {
+                        FileName = mp.FileName ?? "attachment",
+                        ContentType = mp.ContentType.MimeType,
+                        Size = ms.Length,
+                        Data = ms.ToArray()
+                    });
+                }
+                else if (part is MessagePart rfc822)
+                {
+                    using var ms = new MemoryStream();
+                    rfc822.Message.WriteTo(ms);
+                    email.Attachments.Add(new Attachment
+                    {
+                        FileName = (rfc822.Message.Subject ?? "attached-message") + ".eml",
+                        ContentType = "message/rfc822",
+                        Size = ms.Length,
+                        Data = ms.ToArray()
+                    });
+                }
+            }
+            return email;
+        }
 
         static void ApplyTo(Email target, MimeMessage m)
         {
@@ -123,6 +157,36 @@ public partial class MainWindow : Window
             target.Date = m.Date.DateTime;
             target.BodyHtml = m.HtmlBody;
             target.BodyText = m.TextBody;
+
+            // Replace attachments completely for overwrite scenario
+            target.Attachments.Clear();
+            foreach (var part in m.Attachments)
+            {
+                if (part is MimePart mp)
+                {
+                    using var ms = new MemoryStream();
+                    mp.Content.DecodeTo(ms);
+                    target.Attachments.Add(new Attachment
+                    {
+                        FileName = mp.FileName ?? "attachment",
+                        ContentType = mp.ContentType.MimeType,
+                        Size = ms.Length,
+                        Data = ms.ToArray()
+                    });
+                }
+                else if (part is MessagePart rfc822)
+                {
+                    using var ms = new MemoryStream();
+                    rfc822.Message.WriteTo(ms);
+                    target.Attachments.Add(new Attachment
+                    {
+                        FileName = (rfc822.Message.Subject ?? "attached-message") + ".eml",
+                        ContentType = "message/rfc822",
+                        Size = ms.Length,
+                        Data = ms.ToArray()
+                    });
+                }
+            }
         }
 
         static bool ShouldOverwrite(string subject, ref bool? overwriteAll)
