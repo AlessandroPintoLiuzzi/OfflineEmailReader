@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Win32;
 using MimeKit;
 using Microsoft.EntityFrameworkCore;
 using OfflineEmailManager.Data;
@@ -9,6 +8,9 @@ using OfflineEmailManager.Model;
 using System.ComponentModel;
 using System.Windows.Data;
 using System.IO;
+using WF = System.Windows.Forms; // FolderBrowserDialog
+using Win32OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using Win32SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
 namespace OfflineEmailManager;
 
@@ -42,7 +44,7 @@ public partial class MainWindow : Window
 
     private void LoadFiles_Click(object sender, RoutedEventArgs e)
     {
-        var openFileDialog = new OpenFileDialog
+        var openFileDialog = new Win32OpenFileDialog
         {
             Multiselect = true,
             Filter = "Email files (*.eml)|*.eml"
@@ -102,7 +104,7 @@ public partial class MainWindow : Window
         // Build a concise summary
         var summary = $"Imported: {loadedCount}, Overwritten: {overwrittenCount}, Skipped: {skippedCount}";
         if (failedCount > 0) summary += $", Failed: {failedCount}";
-        MessageBox.Show(summary);
+        System.Windows.MessageBox.Show(summary);
 
         LoadEmailsFromDb();
 
@@ -193,7 +195,7 @@ public partial class MainWindow : Window
         {
             if (overwriteAll.HasValue) return overwriteAll.Value;
 
-            var result = MessageBox.Show(
+            var result = System.Windows.MessageBox.Show(
                 $"Email with subject '{subject}' already exists.\n" +
                 "Do you want to overwrite it?\n" +
                 "Yes = Overwrite, No = Skip, Cancel = Choose action for all subsequent matches.",
@@ -203,7 +205,7 @@ public partial class MainWindow : Window
 
             if (result == MessageBoxResult.Cancel)
             {
-                var allResult = MessageBox.Show(
+                var allResult = System.Windows.MessageBox.Show(
                     "Apply this action to all subsequent matches?\nYes = Overwrite All, No = Skip All",
                     "Apply to All",
                     MessageBoxButton.YesNo,
@@ -334,7 +336,7 @@ public partial class MainWindow : Window
         {
             WriteAttachmentFile(av, folder);
         }
-        MessageBox.Show("All attachments saved.");
+        System.Windows.MessageBox.Show("All attachments saved.");
     }
 
     private void AttachmentList_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -347,7 +349,7 @@ public partial class MainWindow : Window
 
     private void SaveAttachmentToDisk(AttachmentView av)
     {
-        var sfd = new Microsoft.Win32.SaveFileDialog
+        var sfd = new Win32SaveFileDialog
         {
             FileName = av.FileName,
             Filter = "All Files (*.*)|*.*"
@@ -355,15 +357,15 @@ public partial class MainWindow : Window
         if (sfd.ShowDialog() == true)
         {
             File.WriteAllBytes(sfd.FileName, av.Data);
-            MessageBox.Show("Attachment saved.");
+            System.Windows.MessageBox.Show("Attachment saved.");
         }
     }
 
     private string? SelectFolder()
     {
-        using var fbd = new System.Windows.Forms.FolderBrowserDialog();
+        using var fbd = new WF.FolderBrowserDialog();
         var result = fbd.ShowDialog();
-        if (result == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(fbd.SelectedPath))
+        if (result == WF.DialogResult.OK && !string.IsNullOrWhiteSpace(fbd.SelectedPath))
         {
             return fbd.SelectedPath;
         }
@@ -379,7 +381,7 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Failed to save {av.FileName}: {ex.Message}");
+            System.Windows.MessageBox.Show($"Failed to save {av.FileName}: {ex.Message}");
         }
     }
 
@@ -440,7 +442,7 @@ public partial class MainWindow : Window
     {
         if (EmailListBox.SelectedItem is Email selected)
         {
-            Clipboard.SetText(selected.Subject ?? string.Empty);
+            System.Windows.Clipboard.SetText(selected.Subject ?? string.Empty);
             UpdateStatus(((System.Collections.ICollection)EmailListBox.ItemsSource).Count, "Copied subject to clipboard");
         }
     }
@@ -449,7 +451,7 @@ public partial class MainWindow : Window
     {
         if (EmailListBox.SelectedItem is Email selected)
         {
-            Clipboard.SetText(selected.From ?? string.Empty);
+            System.Windows.Clipboard.SetText(selected.From ?? string.Empty);
             UpdateStatus(((System.Collections.ICollection)EmailListBox.ItemsSource).Count, "Copied sender to clipboard");
         }
     }
@@ -457,7 +459,7 @@ public partial class MainWindow : Window
     private void DeleteEmail_Click(object sender, RoutedEventArgs e)
     {
         if (EmailListBox.SelectedItem is not Email selected) return;
-        var confirm = MessageBox.Show($"Delete email '{selected.Subject}'?", "Confirm delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        var confirm = System.Windows.MessageBox.Show($"Delete email '{selected.Subject}'?", "Confirm delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (confirm != MessageBoxResult.Yes) return;
 
         _context.Emails.Remove(selected);
