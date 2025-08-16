@@ -283,10 +283,9 @@ public partial class MainWindow : Window
     }
     private void EmailListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        // Get the email object that is currently selected in the list.
         if (EmailListBox.SelectedItem is Email selectedEmail)
         {
-            // Check if the email has HTML content.
+            // Show body
             if (!string.IsNullOrEmpty(selectedEmail.BodyHtml))
             {
                 EnsureWebView2(() => EmailContentViewer.CoreWebView2.NavigateToString(selectedEmail.BodyHtml));
@@ -296,7 +295,97 @@ public partial class MainWindow : Window
                 var safeText = selectedEmail.BodyText ?? string.Empty;
                 EnsureWebView2(() => EmailContentViewer.CoreWebView2.NavigateToString($"<pre>{System.Net.WebUtility.HtmlEncode(safeText)}</pre>"));
             }
+
+            // Populate attachments list
+            if (selectedEmail.Attachments != null && selectedEmail.Attachments.Any())
+            {
+                AttachmentList.ItemsSource = selectedEmail.Attachments
+                    .Select(a => new AttachmentView(a))
+                    .ToList();
+                AttachmentGroup.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                AttachmentList.ItemsSource = null;
+                AttachmentGroup.Visibility = Visibility.Collapsed;
+            }
         }
+        else
+        {
+            AttachmentList.ItemsSource = null;
+            AttachmentGroup.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void SaveSelectedAttachment_Click(object sender, RoutedEventArgs e)
+    {
+        if (AttachmentList.SelectedItem is AttachmentView av)
+        {
+            SaveAttachmentToDisk(av);
+        }
+    }
+
+    private void SaveAllAttachments_Click(object sender, RoutedEventArgs e)
+    {
+        if (AttachmentList.Items.Count == 0) return;
+        var folder = SelectFolder();
+        if (folder == null) return;
+        foreach (AttachmentView av in AttachmentList.Items)
+        {
+            WriteAttachmentFile(av, folder);
+        }
+        MessageBox.Show("All attachments saved.");
+    }
+
+    private void AttachmentList_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (AttachmentList.SelectedItem is AttachmentView av)
+        {
+            SaveAttachmentToDisk(av);
+        }
+    }
+
+    private void SaveAttachmentToDisk(AttachmentView av)
+    {
+        var sfd = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = av.FileName,
+            Filter = "All Files (*.*)|*.*"
+        };
+        if (sfd.ShowDialog() == true)
+        {
+            File.WriteAllBytes(sfd.FileName, av.Data);
+            MessageBox.Show("Attachment saved.");
+        }
+    }
+
+    private string? SelectFolder()
+    {
+        using var fbd = new System.Windows.Forms.FolderBrowserDialog();
+        var result = fbd.ShowDialog();
+        if (result == System.Windows.Forms.DialogResult.OK && !string.IsNullOrWhiteSpace(fbd.SelectedPath))
+        {
+            return fbd.SelectedPath;
+        }
+        return null;
+    }
+
+    private void WriteAttachmentFile(AttachmentView av, string folder)
+    {
+        try
+        {
+            var targetPath = System.IO.Path.Combine(folder, av.FileName);
+            File.WriteAllBytes(targetPath, av.Data);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to save {av.FileName}: {ex.Message}");
+        }
+    }
+
+    private record AttachmentView(int Id, string FileName, string ContentType, long Size, byte[] Data)
+    {
+        public AttachmentView(Attachment a) : this(a.Id, a.FileName, a.ContentType, a.Size, a.Data) { }
     }
 
     private async void EnsureWebView2(System.Action action)

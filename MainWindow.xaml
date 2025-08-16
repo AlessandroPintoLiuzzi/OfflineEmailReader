@@ -79,9 +79,46 @@
         <GridSplitter Grid.Row="0" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#DDD"/>
 
         <!-- Right Pane -->
-        <Border Grid.Row="0" Grid.Column="2" BorderBrush="Gray" BorderThickness="1" Margin="5,0,0,0">
-            <wv2:WebView2 x:Name="EmailContentViewer" />
-        </Border>
+        <Grid Grid.Row="0" Grid.Column="2" Margin="5,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="180"/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,5">
+                <wv2:WebView2 x:Name="EmailContentViewer" />
+            </Border>
+            <GroupBox Grid.Row="1" Header="Attachments" x:Name="AttachmentGroup" Visibility="Collapsed">
+                <DockPanel>
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,5">
+                        <Button Content="Save Selected" Margin="0,0,6,0" Padding="8,3" Click="SaveSelectedAttachment_Click"/>
+                        <Button Content="Save All" Padding="8,3" Click="SaveAllAttachments_Click"/>
+                    </StackPanel>
+                    <ListView x:Name="AttachmentList" MouseDoubleClick="AttachmentList_MouseDoubleClick"
+                              VirtualizingStackPanel.IsVirtualizing="True"
+                              ScrollViewer.CanContentScroll="True">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="File" Width="200" DisplayMemberBinding="{Binding FileName}" />
+                                <GridViewColumn Header="Type" Width="130" DisplayMemberBinding="{Binding ContentType}" />
+                                <GridViewColumn Header="Size" Width="80">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock>
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{0:N0} B">
+                                                        <Binding Path="Size" />
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </DockPanel>
+            </GroupBox>
+        </Grid>
 
         <!-- Status Bar -->
         <StatusBar Grid.Row="1" Grid.ColumnSpan="3" Margin="0,8,0,0">
