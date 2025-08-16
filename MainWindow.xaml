@@ -21,7 +21,7 @@
             <!-- Search Panel -->
             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Search" Margin="8,0,0,0" Padding="12,4" Click="SearchButton_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Search" Margin="8,0,0,0" Padding="12,4" Click="SearchButton_Click" Width="61" Height="26"/>
                     <Button DockPanel.Dock="Right" Content="Clear" Padding="12,4" Click="SearchClearButton_Click"/>
                     <TextBox x:Name="SearchTextBox" MinWidth="200" ToolTip="Enter text to search" KeyDown="SearchTextBox_KeyDown"/>
                 </DockPanel>
