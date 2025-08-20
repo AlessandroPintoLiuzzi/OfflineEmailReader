@@ -141,11 +141,13 @@ public partial class MainWindow : Window
             var email = new Email
             {
                 Subject = (m.Subject ?? "(no subject)").Trim(),
-                From = string.Join(",", m.From.Select(a =>
-                    (a as MailboxAddress)?.Name ?? (a as MailboxAddress)?.Address ?? a.ToString())),
+                From = string.Join(", ",
+                        m.From.Select(a => a is MailboxAddress mb
+                                    ? (string.IsNullOrWhiteSpace(mb.Name) ? mb.Address : mb.Name)
+                                    : a.ToString())),
                 Date = m.Date.DateTime,
-                BodyHtml = m.HtmlBody,
-                BodyText = m.TextBody,
+                BodyHtml = m.HtmlBody ?? string.Empty,
+                BodyText = m.TextBody ?? string.Empty,
                 Attachments = new List<Attachment>()
             };
 
@@ -181,8 +183,11 @@ public partial class MainWindow : Window
 
         static void ApplyTo(Email target, MimeMessage m)
         {
-            target.From = string.Join(",", m.From.Select(a =>
-                (a as MailboxAddress)?.Name ?? (a as MailboxAddress)?.Address ?? a.ToString()));
+            target.From = string.Join(", ",
+                m.From.Select(a =>
+                    a is MailboxAddress mb
+                        ? (string.IsNullOrWhiteSpace(mb.Name) ? mb.Address : mb.Name)
+                        : a.ToString()));
             target.Date = m.Date.DateTime;
             target.BodyHtml = m.HtmlBody;
             target.BodyText = m.TextBody;
