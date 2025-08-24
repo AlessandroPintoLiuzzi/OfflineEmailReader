@@ -29,7 +29,7 @@ A simple offline Windows app to import, store, and browse .eml emails locally. I
 
 ### Option 1: Download Pre-built Installer (Recommended)
 
-1. Go to the [Releases page](https://github.com/yourusername/OfflineEmailManager/releases)
+1. Go to the [Releases page](https://github.com/AlessandroPintoLiuzzi/OfflineEmailManager/releases)
 2. Download the latest `OfflineEmailManager-vX.X.X-win-x64.zip`
 3. Extract and run `OfflineEmailManager.exe`
 
